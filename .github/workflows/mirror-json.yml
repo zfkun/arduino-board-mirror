@@ -36,12 +36,14 @@ jobs:
         with:
           commit_message: "更新 packages 目录"
           file_pattern: packages/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
 
       - name: 创建 Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
         with:
           tag_name: v$(date '+%Y%m%d%H%M%S')
           release_name: Release v$(date '+%Y%m%d%H%M%S')
