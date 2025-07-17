@@ -13,7 +13,6 @@ jobs:
     env:
       GH_MIRROR: ${{ vars.GH_MIRROR }}
       JSON_URLS: ${{ vars.JSON_URLS }}
-      CRON_SCHEDULE: ${{ vars.CRON_SCHEDULE }}
 
     steps:
       - name: 检出仓库
@@ -32,13 +31,11 @@ jobs:
         run: |
           python scripts/mirror_json.py
 
-      - name: 提交更改
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add packages/
-          git commit -m "更新 packages 目录" || echo "没有更改需要提交"
-          git push
+      - name: 提交并推送更改
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "更新 packages 目录"
+          file_pattern: packages/*
 
       - name: 创建 Release
         id: create_release
@@ -47,6 +44,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v$(date '+%Y%m%d%H%M%S')
-          release_name: Release ${{ env.tag_name }}
+          release_name: Release v$(date '+%Y%m%d%H%M%S')
           draft: false
           prerelease: false
