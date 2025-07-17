@@ -38,14 +38,27 @@ jobs:
           file_pattern: packages/*
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
+      
+      - name: 收集 packages 文件列表
+        id: collect_files
+        run: |
+          # 获取 packages 下的所有文件名（以换行分隔）
+          files=$(ls packages/*)
+          
+          # 用逗号连接成字符串，用于后续传递给 create-release
+          joined_files=$(echo "$files" | paste -sd "," -)
+          
+          # 输出到 outputs 供后续步骤使用
+          echo "files=$joined_files"
+          echo "::set-output::name=package_files::$joined_files"
 
       - name: 创建 Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
         with:
-          tag_name: v$(date '+%Y%m%d%H%M%S')
-          release_name: Release v$(date '+%Y%m%d%H%M%S')
+          name: Release v$(date '+%Y%m%d%H%M%S')
           draft: false
           prerelease: false
+          files: ${{ steps.collect_files.outputs.package_files }}
