@@ -42,13 +42,12 @@ jobs:
         run: |
           # 获取 packages 下的所有文件名（以换行分隔）
           files=$(ls packages/*)
-          
+
           # 用逗号连接成字符串，用于后续传递给 create-release
           joined_files=$(echo "$files" | paste -sd "," -)
           
-          # 输出到 outputs 供后续步骤使用
-          echo "files=$joined_files"
-          echo "::set-output::name=package_files::$joined_files"
+          # 使用 GITHUB_OUTPUT 设置输出变量供后续步骤使用
+          echo "package_files=$joined_files" >> $GITHUB_OUTPUT
 
       - name: 创建 Release
         id: create_release
