@@ -36,8 +36,6 @@ jobs:
         with:
           commit_message: "更新 packages 目录"
           file_pattern: packages/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
       
       - name: 收集 packages 文件列表
         id: collect_files
