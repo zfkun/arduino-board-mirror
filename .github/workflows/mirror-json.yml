@@ -37,16 +37,21 @@ jobs:
           commit_message: "更新 packages 目录"
           file_pattern: packages/*
       
+      - name: 强制更新 latest tag 到当前提交
+        run: |
+          if git rev-parse refs/tags/latest > /dev/null 2>&1; then
+            git tag -d latest
+            git push origin --delete latest || echo "Remote tag not found, skipping delete."
+          fi
+
+          git tag latest
+          git push -f origin latest
+      
       - name: 收集 packages 文件列表
         id: collect_files
         run: |
-          # 获取 packages 下的所有文件名（以换行分隔）
           files=$(ls packages/*)
-
-          # 用逗号连接成字符串，用于后续传递给 create-release
           joined_files=$(echo "$files" | paste -sd "," -)
-          
-          # 使用 GITHUB_OUTPUT 设置输出变量供后续步骤使用
           echo "package_files=$joined_files" >> $GITHUB_OUTPUT
 
       - name: 创建 Release
@@ -55,6 +60,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
         with:
+          tag_name: latest
           name: Release v$(date '+%Y%m%d%H%M%S')
           draft: false
           prerelease: false
