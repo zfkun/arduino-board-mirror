@@ -1,0 +1,52 @@
+# .github/workflows/mirror-json.yml
+
+name: Mirror JSON Files
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 默认定时规则。可手动修改为其他值，如需完全动态，请使用 repository dispatch 或外部触发器
+  workflow_dispatch:
+
+jobs:
+  mirror-json:
+    runs-on: ubuntu-latest
+    env:
+      GH_MIRROR: ${{ secrets.GH_MIRROR }}
+      JSON_URLS: ${{ vars.JSON_URLS }}
+      CRON_SCHEDULE: ${{ vars.CRON_SCHEDULE }}
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v3
+
+      - name: 设置 Python 环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 安装依赖
+        run: |
+          pip install requests
+
+      - name: 执行镜像处理脚本
+        run: |
+          python scripts/mirror_json.py
+
+      - name: 提交更改
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add packages/
+          git commit -m "更新 packages 目录" || echo "没有更改需要提交"
+          git push
+
+      - name: 创建 Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v$(date '+%Y%m%d%H%M%S')
+          release_name: Release ${{ env.tag_name }}
+          draft: false
+          prerelease: false
