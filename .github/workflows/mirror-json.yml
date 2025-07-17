@@ -37,15 +37,14 @@ jobs:
           commit_message: "更新 packages 目录"
           file_pattern: packages/*
       
-      - name: 强制更新 latest tag 到当前提交
+      - name: 生成 release 名称和 tag
+        id: generate_release_info
         run: |
-          if git rev-parse refs/tags/latest > /dev/null 2>&1; then
-            git tag -d latest
-            git push origin --delete latest || echo "Remote tag not found, skipping delete."
-          fi
+          release_name="Release v$(date '+%Y%m%d%H%M%S')"
+          tag_name="latest"
 
-          git tag latest
-          git push -f origin latest
+          echo "release_name=$release_name" >> $GITHUB_OUTPUT
+          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
       
       - name: 收集 packages 文件列表
         id: collect_files
@@ -53,15 +52,27 @@ jobs:
           files=$(ls packages/*)
           joined_files=$(echo "$files" | paste -sd "," -)
           echo "package_files=$joined_files" >> $GITHUB_OUTPUT
+      
+      - name: 强制更新 latest tag 到当前提交
+        run: |
+          # 删除远程和本地的 latest tag（如果存在）
+          if git rev-parse refs/tags/${{ steps.generate_release_info.outputs.tag_name }} > /dev/null 2>&1; then
+            git tag -d ${{ steps.generate_release_info.outputs.tag_name }}
+            git push origin --delete ${{ steps.generate_release_info.outputs.tag_name }} || echo "Remote tag not found, skipping delete."
+          fi
 
-      - name: 创建 Release
-        id: create_release
+          # 创建新的 tag 并推送到远程
+          git tag ${{ steps.generate_release_info.outputs.tag_name }}
+          git push -f origin ${{ steps.generate_release_info.outputs.tag_name }}
+
+      - name: 创建/更新 Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
+          RELEASE_NAME: ${{ steps.generate_release_info.outputs.release_name }}
         with:
-          tag_name: latest
-          name: Release v$(date '+%Y%m%d%H%M%S')
+          name: ${{ env.RELEASE_NAME }}
+          tag_name: ${{ steps.generate_release_info.outputs.tag_name }}
           draft: false
           prerelease: false
           files: ${{ steps.collect_files.outputs.package_files }}
