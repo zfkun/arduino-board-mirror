@@ -4,7 +4,7 @@ name: Mirror JSON Files
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 默认定时规则。可手动修改为其他值，如需完全动态，请使用 repository dispatch 或外部触发器
+    - cron: '0 * * * *' # 默认定时规则。可手动修改为其他值，如需完全动态，请使用 repository dispatch 或外部触发器
   workflow_dispatch:
 
 jobs:
