@@ -53,12 +53,6 @@ jobs:
           echo "release_name=$release_name" >> $GITHUB_OUTPUT
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
       
-      - name: 收集 packages 文件列表
-        id: collect_files
-        run: |
-          files=$(ls packages/*)
-          echo "package_files=$files" >> $GITHUB_OUTPUT
-      
       - name: 强制更新 latest tag
         run: |
           git tag -f ${{ steps.generate_release_info.outputs.tag_name }}
@@ -70,4 +64,5 @@ jobs:
             --target ${{ steps.generate_release_info.outputs.tag_name }} \
             --title "${{ steps.generate_release_info.outputs.release_title }}" \
             --notes "Auto-generated at $(date)" \
-            ${{ steps.collect_files.outputs.package_files }}
+            --fail-on-no-commits \
+            packages/*
