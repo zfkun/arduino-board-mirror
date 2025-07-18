@@ -17,6 +17,11 @@ jobs:
     steps:
       - name: 检出仓库
         uses: actions/checkout@v3
+      
+      - name: 安装 GitHub CLI
+        run: |
+          sudo apt-get install gh -y
+          gh auth login --with-token <<< "${{ secrets.GH_PUSH_TOKEN }}"
 
       - name: 设置 Python 环境
         uses: actions/setup-python@v4
@@ -40,9 +45,11 @@ jobs:
       - name: 生成 release 名称和 tag
         id: generate_release_info
         run: |
-          release_name="Release v$(date '+%Y%m%d%H%M%S')"
+          release_title="Release $(date '+%Y-%m-%d %H:%M')"
+          release_name="release-$(date '+%Y%m%d%H%M%S')"
           tag_name="latest"
 
+          echo "release_title=$release_title" >> $GITHUB_OUTPUT
           echo "release_name=$release_name" >> $GITHUB_OUTPUT
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
       
@@ -53,26 +60,15 @@ jobs:
           joined_files=$(echo "$files" | paste -sd "," -)
           echo "package_files=$joined_files" >> $GITHUB_OUTPUT
       
-      - name: 强制更新 latest tag 到当前提交
+      - name: 强制更新 latest tag
         run: |
-          # 删除远程和本地的 latest tag（如果存在）
-          if git rev-parse refs/tags/${{ steps.generate_release_info.outputs.tag_name }} > /dev/null 2>&1; then
-            git tag -d ${{ steps.generate_release_info.outputs.tag_name }}
-            git push origin --delete ${{ steps.generate_release_info.outputs.tag_name }} || echo "Remote tag not found, skipping delete."
-          fi
+          git tag -f ${{ steps.generate_release_info.outputs.tag_name }}
+          git push origin ${{ steps.generate_release_info.outputs.tag_name }} -f
 
-          # 创建新的 tag 并推送到远程
-          git tag ${{ steps.generate_release_info.outputs.tag_name }}
-          git push -f origin ${{ steps.generate_release_info.outputs.tag_name }}
-
-      - name: 创建/更新 Release
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
-          RELEASE_NAME: ${{ steps.generate_release_info.outputs.release_name }}
-        with:
-          name: ${{ env.RELEASE_NAME }}
-          tag_name: ${{ steps.generate_release_info.outputs.tag_name }}
-          draft: false
-          prerelease: false
-          files: ${{ steps.collect_files.outputs.package_files }}
+      - name: 创建唯一 Release
+        run: |
+          gh release create "${{ steps.generate_release_info.outputs.release_name }}" \
+            --target ${{ steps.generate_release_info.outputs.tag_name }} \
+            --title "${{ steps.generate_release_info.outputs.release_title }}" \
+            --notes "Auto-generated at $(date)" \
+            ${{ steps.collect_files.outputs.package_files }}
