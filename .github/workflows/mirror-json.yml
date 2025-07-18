@@ -57,8 +57,7 @@ jobs:
         id: collect_files
         run: |
           files=$(ls packages/*)
-          joined_files=$(echo "$files" | paste -sd "," -)
-          echo "package_files=$joined_files" >> $GITHUB_OUTPUT
+          echo "package_files=$files" >> $GITHUB_OUTPUT
       
       - name: 强制更新 latest tag
         run: |
