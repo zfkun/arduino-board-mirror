@@ -60,6 +60,20 @@ jobs:
           commit_message: "更新 packages 目录"
           file_pattern: packages/*
       
+      - name: 获取最新提交信息
+        if: steps.mirror_script.outputs.no_changes != 'true'
+        id: get_commit_info
+        run: |
+          git pull
+          commit_sha=$(git rev-parse HEAD)
+          short_sha=$(git rev-parse --short HEAD)
+          
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+          echo "short_sha=$short_sha" >> $GITHUB_OUTPUT
+          
+          echo "Latest commit: $commit_sha"
+          git show --stat
+      
       - name: 生成 release 名称和 tag
         if: steps.mirror_script.outputs.no_changes != 'true'
         id: generate_release_info
@@ -67,24 +81,22 @@ jobs:
           release_title="Release $(date '+%Y-%m-%d %H:%M')"
           release_name="release-$(date '+%Y%m%d%H%M%S')"
           tag_name="latest"
-          commit_sha=$(git rev-parse HEAD)
 
           echo "release_title=$release_title" >> $GITHUB_OUTPUT
           echo "release_name=$release_name" >> $GITHUB_OUTPUT
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
-          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
       
       - name: 强制更新 latest tag
         if: steps.mirror_script.outputs.no_changes != 'true'
         run: |
-          git tag -f ${{ steps.generate_release_info.outputs.tag_name }}
+          git tag -f ${{ steps.generate_release_info.outputs.tag_name }} ${{ steps.get_commit_info.outputs.commit_sha }}
           git push origin ${{ steps.generate_release_info.outputs.tag_name }} -f
 
       - name: 创建唯一 Release
         if: steps.mirror_script.outputs.no_changes != 'true'
         run: |
           gh release create "${{ steps.generate_release_info.outputs.release_name }}" \
-            --target ${{ steps.generate_release_info.outputs.commit_sha }} \
+            --target ${{ steps.get_commit_info.outputs.commit_sha }} \
             --title "${{ steps.generate_release_info.outputs.release_title }}" \
             --notes "Auto-generated at $(date)" \
             packages/*
