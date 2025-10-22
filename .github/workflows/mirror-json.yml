@@ -67,12 +67,10 @@ jobs:
           release_title="Release $(date '+%Y-%m-%d %H:%M')"
           release_name="release-$(date '+%Y%m%d%H%M%S')"
           tag_name="latest"
-          commit_sha=$(git rev-parse HEAD)
 
           echo "release_title=$release_title" >> $GITHUB_OUTPUT
           echo "release_name=$release_name" >> $GITHUB_OUTPUT
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
-          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
       
       - name: 强制更新 latest tag
         if: steps.mirror_script.outputs.no_changes != 'true'
@@ -84,8 +82,7 @@ jobs:
         if: steps.mirror_script.outputs.no_changes != 'true'
         run: |
           gh release create "${{ steps.generate_release_info.outputs.release_name }}" \
-            --target ${{ steps.generate_release_info.outputs.commit_sha }} \
+            --target ${{ steps.generate_release_info.outputs.tag_name }} \
             --title "${{ steps.generate_release_info.outputs.release_title }}" \
             --notes "Auto-generated at $(date)" \
-            --fail-on-no-commits \
             packages/*
