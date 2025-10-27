@@ -85,12 +85,6 @@ jobs:
           echo "release_title=$release_title" >> $GITHUB_OUTPUT
           echo "release_name=$release_name" >> $GITHUB_OUTPUT
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
-      
-      - name: 强制更新 latest tag
-        if: steps.mirror_script.outputs.no_changes != 'true'
-        run: |
-          git tag -f ${{ steps.generate_release_info.outputs.tag_name }} ${{ steps.get_commit_info.outputs.commit_sha }}
-          git push origin ${{ steps.generate_release_info.outputs.tag_name }} -f
 
       - name: 创建唯一 Release
         if: steps.mirror_script.outputs.no_changes != 'true'
@@ -100,3 +94,9 @@ jobs:
             --title "${{ steps.generate_release_info.outputs.release_title }}" \
             --notes "Auto-generated at $(date)" \
             packages/*
+
+      - name: 同步更新 latest tag
+        if: steps.mirror_script.outputs.no_changes != 'true'
+        run: |
+          git tag -f ${{ steps.generate_release_info.outputs.tag_name }} ${{ steps.get_commit_info.outputs.commit_sha }}
+          git push origin ${{ steps.generate_release_info.outputs.tag_name }} -f
