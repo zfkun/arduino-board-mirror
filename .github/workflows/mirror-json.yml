@@ -80,11 +80,9 @@ jobs:
         run: |
           release_title="Release $(date '+%Y-%m-%d %H:%M')"
           release_name="release-$(date '+%Y%m%d%H%M%S')"
-          tag_name="latest"
 
           echo "release_title=$release_title" >> $GITHUB_OUTPUT
           echo "release_name=$release_name" >> $GITHUB_OUTPUT
-          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
 
       - name: 创建唯一 Release
         if: steps.mirror_script.outputs.no_changes != 'true'
@@ -95,12 +93,26 @@ jobs:
             --notes "Auto-generated at $(date)" \
             packages/*
 
-      - name: 同步 latest release
+      - name: 同步 latest
         if: steps.mirror_script.outputs.no_changes != 'true'
         run: |
-          gh release delete latest --yes || true
-          gh release create "${{ steps.generate_release_info.outputs.tag_name }}" \
-            --target ${{ steps.get_commit_info.outputs.commit_sha }} \
-            --title "Latest Release" \
-            --notes "Auto-generated at $(date)" \
-            packages/*
+            if gh release view latest --json tagName > /dev/null 2>&1; then
+                echo "最新Release存在, 更新资源..."
+                for asset in $(gh release view latest --json assets --jq '.assets[].name'); do
+                    gh release delete-asset latest "$asset" --yes || true
+                done
+                
+                for file in packages/*; do
+                    if [ -f "$file" ]; then
+                        gh release upload latest "$file" || true
+                    fi
+                done
+            else
+                echo "Creating new latest release..."
+                gh release create "latest" \
+                    --target ${{ steps.get_commit_info.outputs.commit_sha }} \
+                    --title "Latest Release" \
+                    --notes "Auto-generated at $(date)" \
+                    --latest \
+                    packages/*
+            fi
