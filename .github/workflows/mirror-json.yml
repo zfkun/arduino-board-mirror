@@ -95,8 +95,12 @@ jobs:
             --notes "Auto-generated at $(date)" \
             packages/*
 
-      - name: 同步更新 latest tag
+      - name: 同步 latest release
         if: steps.mirror_script.outputs.no_changes != 'true'
         run: |
-          git tag -f ${{ steps.generate_release_info.outputs.tag_name }} ${{ steps.get_commit_info.outputs.commit_sha }}
-          git push origin ${{ steps.generate_release_info.outputs.tag_name }} -f
+          gh release delete latest --yes || true
+          gh release create "${{ steps.generate_release_info.outputs.tag_name }}" \
+            --target ${{ steps.get_commit_info.outputs.commit_sha }} \
+            --title "Latest Release" \
+            --notes "Auto-generated at $(date)" \
+            packages/*
