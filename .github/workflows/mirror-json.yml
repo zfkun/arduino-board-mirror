@@ -4,7 +4,7 @@ name: Mirror JSON Files
 
 on:
   schedule:
-    - cron: '0 * * * *' # 每小时(调试)
+    # - cron: '0 * * * *' # 每小时(调试)
     - cron: '0 0 * * *' # 每天0点
   workflow_dispatch:
   repository_dispatch:
